@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xoxminer | Home</title>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --accent: #ffd700;
+            --bg: #020617;
+            --card: rgba(255, 255, 255, 0.04);
+            --glow: 0 0 20px rgba(0, 242, 254, 0.6);
+        }
+
+        * { box-sizing: border-box; transition: 0.3s; }
+        body, html {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg); color: white;
+            line-height: 1.4; overflow-x: hidden;
+        }
+
+        #particles-js { position: fixed; width: 100%; height: 100%; z-index: -1; }
+
+        .lang-btn {
+            position: fixed; top: 15px; right: 15px; z-index: 1000;
+            background: var(--card); border: 1px solid var(--primary);
+            color: white; padding: 6px 15px; border-radius: 15px; cursor: pointer;
+            font-size: 0.85rem; backdrop-filter: blur(5px);
+        }
+
+        header { padding: 50px 20px 30px; text-align: center; }
+        .logo-box { width: 120px; height: 120px; margin: 0 auto 15px; filter: drop-shadow(var(--glow)); }
+        h1 { font-size: 2.5rem; margin: 5px 0; font-weight: 900; color: var(--primary); text-transform: uppercase; }
+        
+        .btn-pulse {
+            background: var(--primary); color: var(--bg) !important;
+            padding: 18px 40px; border-radius: 50px; text-decoration: none;
+            font-weight: 900; font-size: 1.1rem; display: inline-block;
+            margin-top: 20px; box-shadow: var(--glow);
+            animation: ultimate-pulse 1.5s infinite; border: none; cursor: pointer;
+        }
+
+        @keyframes ultimate-pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(0, 242, 254, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
+        }
+
+        section { padding: 40px 20px; max-width: 800px; margin: 0 auto; }
+        h2 { font-size: 1.8rem; text-align: center; margin-bottom: 30px; color: var(--primary); border-bottom: 2px solid rgba(0,242,254,0.1); display: inline-block; width: 100%; padding-bottom: 10px; }
+
+        .roadmap-list { display: flex; flex-direction: column; gap: 15px; }
+        .roadmap-step { background: var(--card); padding: 20px; border-radius: 15px; border-left: 4px solid var(--primary); display: flex; align-items: center; gap: 15px; }
+        .step-num { font-size: 1.5rem; font-weight: 900; color: var(--accent); opacity: 0.5; }
+
+        .faq-box { background: var(--card); border-radius: 12px; padding: 15px; cursor: pointer; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .faq-box h4 { margin: 0; font-size: 1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
+        .faq-box p { margin-top: 10px; font-size: 0.9rem; color: #94a3b8; display: none; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
+        .faq-box.active p { display: block; }
+
+        .tg-card { background: linear-gradient(135deg, rgba(0, 136, 204, 0.2), rgba(0, 136, 204, 0.05)); border: 1px solid #0088cc; border-radius: 20px; padding: 30px; text-align: center; margin-top: 40px; }
+        .btn-tg { background: #0088cc; color: white !important; padding: 10px 30px; border-radius: 50px; text-decoration: none; font-weight: bold; display: inline-block; }
+
+        /* Privacy Modal */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); backdrop-filter: blur(8px); }
+        .modal-content { background: var(--bg); margin: 10% auto; padding: 30px; border: 1px solid var(--primary); width: 85%; max-width: 500px; border-radius: 20px; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 25px; cursor: pointer; color: var(--primary); }
+        .privacy-link { color: var(--primary); text-decoration: none; font-size: 0.75rem; cursor: pointer; margin-top: 15px; display: inline-block; opacity: 0.7; }
+        .privacy-link:hover { opacity: 1; }
+
+        footer { text-align: center; padding: 40px; font-size: 0.8rem; opacity: 0.5; }
+
+        body.rtl { direction: rtl; }
+        body.rtl .lang-btn { right: auto; left: 15px; }
+        body.rtl .roadmap-step { border-left: none; border-right: 4px solid var(--primary); }
+        body.rtl #pModalTitle, body.rtl #pModalText { text-align: right; }
+    </style>
+</head>
+<body>
+
+<div id="particles-js"></div>
+<button class="lang-btn" onclick="toggleLang()" id="langBtn">العربية</button>
+
+<header>
+    <div class="logo-box">
+        <svg viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="85" fill="none" stroke="#00f2fe" stroke-width="8" />
+            <path d="M70 70 L130 130 M130 70 L70 130" stroke="#00f2fe" stroke-width="20" stroke-linecap="round" />
+            <circle cx="100" cy="100" r="15" fill="#ffd700" />
+        </svg>
+    </div>
+    <h1 id="mTitle">xoxminer</h1>
+    <p id="mDesc" style="color:#94a3b8">The premier cloud mining solution on TON Network.</p>
+    <a href="https://t.me/Xoxminer_bot" class="btn-pulse" id="startBtn">OPEN TELEGRAM BOT <i class="fab fa-telegram-plane"></i></a>
+</header>
+
+<section id="roadmap">
+    <h2 id="rTitle">Roadmap 2026</h2>
+    <div class="roadmap-list">
+        <div class="roadmap-step"><div class="step-num">01</div><div><b id="r1">Free Distribution</b><br><small id="r1d">Mining-based token distribution to all users.</small></div></div>
+        <div class="roadmap-step"><div class="step-num">02</div><div><b id="r2">Community Building</b><br><small id="r2d">Expanding global reach and social ecosystem.</small></div></div>
+        <div class="roadmap-step"><div class="step-num">03</div><div><b id="r3">TON Apps & Games</b><br><small id="r3d">Building native dApps on TON network.</small></div></div>
+        <div class="roadmap-step"><div class="step-num">04</div><div><b id="r4">Exchange Listing</b><br><small id="r4d">Official OXO listing on major platforms.</small></div></div>
+    </div>
+</section>
+
+<section id="faq">
+    <h2 id="fTitle">Project Q&A</h2>
+    <div class="faq-box" onclick="this.classList.toggle('active')"><h4 id="q1">How to start mining? <i class="fas fa-chevron-down"></i></h4><p id="a1">Simply open our Telegram Bot, click "Start", and the cloud mining process begins automatically 24/7.</p></div>
+    <div class="faq-box" onclick="this.classList.toggle('active')"><h4 id="q2">How to withdraw? <i class="fas fa-chevron-down"></i></h4><p id="a2">Withdrawals are made directly to your USDT (BEP20) wallet address and arrive on the same day.</p></div>
+    <div class="faq-box" onclick="this.classList.toggle('active')"><h4 id="q3">What is the minimum limit? <i class="fas fa-chevron-down"></i></h4><p id="a3">The minimum withdrawal limit is currently set at 10 XOX tokens.</p></div>
+    <div class="faq-box" onclick="this.classList.toggle('active')"><h4 id="q4">What is the exchange rate? <i class="fas fa-chevron-down"></i></h4><p id="a4">Every 100 XOX tokens are equal to 1 USDT.</p></div>
+
+    <div class="tg-card">
+        <i class="fab fa-telegram-plane" style="font-size: 2rem; color: #0088cc;"></i>
+        <h3 id="tgTitle">Join Community</h3>
+        <p id="tgDesc">Stay updated with the latest news.</p>
+        <a href="https://t.me/xoxminerofficial" class="btn-tg" id="tgBtn">Join Channel</a>
+    </div>
+</section>
+
+<div id="privacyModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closePrivacy()">&times;</span>
+        <h2 id="pModalTitle" style="color: var(--primary); margin-top: 0;">Privacy Policy</h2>
+        <div id="pModalText" style="color: #cbd5e1; line-height: 1.6;">
+            <p><strong>1. Data Collection:</strong> We only use your public Telegram ID to identify your mining account. We do not collect or store personal data.</p>
+            <p><strong>2. Security:</strong> Our system is built on secure cloud infrastructure to ensure your mining rewards are safe.</p>
+            <p><strong>3. Advertisements:</strong> We use third-party advertising services to support and keep our mining services free for everyone.</p>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p>© 2026 xoxminer.com | Empowering the TON Community</p>
+    <a class="privacy-link" onclick="openPrivacy()" id="pLink">Privacy Policy</a>
+</footer>
+
+<script>
+    let currentLang = 'en';
+    const content = {
+        en: {
+            mTitle: "xoxminer", mDesc: "The premier cloud mining solution on TON Network.",
+            startBtn: "OPEN TELEGRAM BOT", rTitle: "Roadmap 2026", fTitle: "Project Q&A",
+            r1: "Free Distribution", r1d: "Mining-based token distribution to all users.",
+            r2: "Community Building", r2d: "Expanding global reach and social ecosystem.",
+            r3: "TON Apps & Games", r3d: "Building native dApps on TON network.",
+            r4: "Exchange Listing", r4d: "Official OXO listing on major platforms.",
+            q1: "How to start mining?", a1: "Open our Telegram Bot, click 'Start', and mining begins automatically.",
+            q2: "How to withdraw?", a2: "Withdrawals are sent to your USDT (BEP20) wallet on the same day.",
+            q3: "What is the minimum limit?", a3: "Minimum withdrawal is 10 XOX tokens.",
+            q4: "What is the exchange rate?", a4: "100 XOX = 1 USDT.",
+            tgTitle: "Join Community", tgDesc: "Stay updated with news.", tgBtn: "Join Channel",
+            pLink: "Privacy Policy", pModalTitle: "Privacy Policy",
+            pModalText: "<p><strong>1. Data Collection:</strong> We only use your Telegram ID for account sync.</p><p><strong>2. Security:</strong> Your rewards are protected by secure cloud infrastructure.</p><p><strong>3. Ads:</strong> We use third-party ads to support our free services.</p>",
+            lang: "العربية"
+        },
+        ar: {
+            mTitle: "إكس أو إكس ماينر", mDesc: "الحل الرائد للتعدين السحابي على شبكة TON.",
+            startBtn: "افتح بوت تليجرام", rTitle: "خارطة الطريق", fTitle: "الأسئلة الشائعة",
+            r1: "توزيع مجاني", r1d: "توزيع الرموز من خلال التعدين لجميع المستخدمين.",
+            r2: "بناء القاعدة الجماهيرية", r2d: "توسيع الانتشار العالمي والنظام الاجتماعي.",
+            r3: "ألعاب وتطبيقات TON", r3d: "بناء تطبيقات وألعاب أصلية على شبكة تون.",
+            r4: "إدراج العملة", r4d: "الإدراج الرسمي لعملة OXO في المنصات الكبرى.",
+            q1: "كيف يتم التعدين؟", a1: "افتح بوت تليجرام، اضغط 'ابدأ'، ويبدأ التعدين تلقائياً.",
+            q2: "كيف يتم السحب؟", a2: "يتم السحب مباشرة على USDT (BEP20) ويصل في نفس اليوم.",
+            q3: "ما هو الحد الأدنى؟", a3: "الحد الأدنى للسحب هو 10 قطع XOX حالياً.",
+            q4: "ما هو سعر الصرف؟", a4: "كل 100 قطعة XOX تساوي 1 دولار.",
+            tgTitle: "انضم لمجتمعنا", tgDesc: "ابقَ على اطلاع بأحدث الأخبار.", tgBtn: "انضم للقناة",
+            pLink: "سياسة الخصوصية", pModalTitle: "سياسة الخصوصية",
+            pModalText: "<p><strong>١. جمع البيانات:</strong> نستخدم معرف تليجرام العام فقط لربط حساب التعدين الخاص بك.</p><p><strong>٢. الأمان:</strong> نظامنا مبني على بنية تحتية سحابية آمنة لضمان حماية مكافآتك.</p><p><strong>٣. الإعلانات:</strong> نستخدم خدمات إعلانية من أطراف ثالثة لدعم استمرارية التعدين المجاني للجميع.</p>",
+            lang: "English"
+        }
+    };
+
+    function toggleLang() {
+        currentLang = currentLang === 'en' ? 'ar' : 'en';
+        document.body.className = currentLang === 'ar' ? 'rtl' : '';
+        const c = content[currentLang];
+        document.getElementById('mTitle').innerText = c.mTitle;
+        document.getElementById('mDesc').innerText = c.mDesc;
+        document.getElementById('startBtn').innerHTML = `${c.startBtn} <i class="fab fa-telegram-plane"></i>`;
+        document.getElementById('rTitle').innerText = c.rTitle;
+        document.getElementById('fTitle').innerText = c.fTitle;
+        document.getElementById('tgTitle').innerText = c.tgTitle;
+        document.getElementById('tgDesc').innerText = c.tgDesc;
+        document.getElementById('tgBtn').innerText = c.tgBtn;
+        document.getElementById('pLink').innerText = c.pLink;
+        document.getElementById('pModalTitle').innerText = c.pModalTitle;
+        document.getElementById('pModalText').innerHTML = c.pModalText;
+        for(let i=1; i<=4; i++) {
+            document.getElementById(`r${i}`).innerText = c[`r${i}`];
+            document.getElementById(`r${i}d`).innerText = c[`r${i}d`];
+            document.getElementById(`q${i}`).innerHTML = `${c[`q${i}`]} <i class="fas fa-chevron-down"></i>`;
+            document.getElementById(`a${i}`).innerText = c[`a${i}`];
+        }
+        document.getElementById('langBtn').innerText = c.lang;
+    }
+
+    function openPrivacy() { document.getElementById('privacyModal').style.display = 'block'; }
+    function closePrivacy() { document.getElementById('privacyModal').style.display = 'none'; }
+    window.onclick = function(event) { if (event.target == document.getElementById('privacyModal')) closePrivacy(); }
+
+    particlesJS("particles-js", {
+        "particles": {
+            "number": { "value": 80 }, "color": { "value": "#00f2fe" },
+            "opacity": { "value": 0.5 }, "size": { "value": 2 },
+            "line_linked": { "enable": true, "distance": 120, "color": "#00f2fe", "opacity": 0.2 },
+            "move": { "enable": true, "speed": 1.5 }
+        }
+    });
+</script>
+</body>
+</html>
