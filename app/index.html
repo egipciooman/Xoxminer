@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="https://adsgram.ai/sdk/v1/adsgram-sdk.js"></script>
+    <script src="https://adsgram.ai/sdk-v1.js"></script>
     <style>
         :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0f172a; --gold: #ffd700; --success: #22c55e; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; text-align: center; padding-bottom: 110px; overflow-x: hidden; }
@@ -145,10 +145,6 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        // إعداد إعلانات AdsGram
-        // ملاحظة: استبدل YOUR_BLOCK_ID بالمعرف الذي ستحصل عليه من موقعهم
-        const AdController = window.Adsgram ? window.Adsgram.init({ blockId: "20648" }) : null;
-
         const BOT_TOKEN = "8428693437:AAErFNnW_cmlrfgQMpqv70gcLbYmspDvzZI";
         const ADMIN_ID = "8260431304";
         let currentLang = 'en';
@@ -205,20 +201,26 @@
         let userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id.toString() : "xox_guest";
         let firstName = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Miner";
 
-        // دالة عرض الإعلان قبل البدء
+        // تم تحديث هذه الوظيفة لدمج كود Adsgram 20648 ونظام المكافآت
         function showAdBeforeMining() {
             if (isMining) return;
             
-            if (AdController) {
-                AdController.show().then(() => {
-                    startMining(); // يبدأ التعدين بعد مشاهدة الإعلان
-                }).catch(() => {
-                    // في حال فشل الإعلان أو تم إغلاقه، يمكنك البدء أو منعه
-                    // سنسمح بالبدء لضمان تجربة مستخدم جيدة، ولكن يفضل تشجيعهم
-                    startMining(); 
+            let adTimeout = setTimeout(() => { startMining(); }, 4000);
+            
+            if (window.Adsgram && window.Adsgram.init) {
+                // استخدام معرف البلوك الجديد 20648
+                const AdController = window.Adsgram.init({ blockId: "20648" });
+                
+                AdController.show().then((result) => {
+                    clearTimeout(adTimeout);
+                    startMining();
+                }).catch((err) => {
+                    clearTimeout(adTimeout);
+                    startMining();
                 });
             } else {
-                startMining(); // إذا لم تعمل مكتبة الإعلانات يبدأ التعدين مباشرة
+                clearTimeout(adTimeout);
+                startMining();
             }
         }
 
@@ -257,3 +259,4 @@
             document.getElementById('nav-3').innerText = d.nav3;
             document.getElementById('txt-wd-preview-label').innerText = d.wdReceive;
             let fHtml = ''; d.faq.forEach(f => { fHtml += `<div class="faq-item"><h4>${f.h}</h4><p>${f.p}</p></div>`; });
+            document.getE
