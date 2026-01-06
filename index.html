@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://adsgram.ai/sdk/v1/adsgram-sdk.js"></script>
     <style>
-        :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0f172a; --gold: #ffd700; --success: #22c55e; }
+        :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0f172a; --gold: #ffd700; --success: #22c55e; --danger: #ef4444; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; text-align: center; padding-bottom: 110px; overflow-x: hidden; }
         .lang-switch { position: fixed; top: 15px; left: 15px; z-index: 2001; }
         .lang-btn { background: #000; color: var(--primary); border: 2px solid var(--primary); padding: 8px 15px; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(0,242,254,0.3); }
@@ -46,6 +46,12 @@
         .pending { background: rgba(255, 215, 0, 0.1); color: var(--gold); }
         .completed { background: rgba(34, 197, 94, 0.1); color: var(--success); }
         .faq-btn { background: rgba(0, 242, 254, 0.1); color: var(--primary); border: 1px solid var(--primary); padding: 5px 15px; border-radius: 10px; font-size: 12px; cursor: pointer; margin-top: 10px; }
+        
+        /* استايل لوحة التحكم المضاف */
+        #adminTab { display: none; }
+        .admin-card { border: 2px dashed var(--primary); margin-top: 20px; background: rgba(0, 242, 254, 0.05); }
+        .admin-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+
         @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
         @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
@@ -135,17 +141,32 @@
         </div>
     </div>
 
+    <div id="adminPage" class="page">
+        <div class="card admin-card">
+            <h3 style="color:var(--primary); margin:0 0 15px 0;">لوحة إدارة xoxminer ⚙️</h3>
+            <div class="admin-stat-grid">
+                <div class="stat-box"><small>إجمالي المستخدمين</small><span id="adminTotalUsers">0</span></div>
+                <div class="stat-box"><small>إجمالي السحوبات</small><span id="adminTotalWD">0</span></div>
+            </div>
+            <hr style="opacity:0.1; margin:15px 0;">
+            <input type="text" id="adminTargetId" placeholder="أدخل أيدي (ID) المستخدم">
+            <input type="number" id="adminBonusAmount" placeholder="المبلغ المراد إضافته">
+            <button class="main-btn" onclick="adminAddBalance()" style="margin-bottom:10px;">إرسال هدية / رصيد 🎁</button>
+            <button class="main-btn" onclick="adminBanUser()" style="background:var(--danger);">حظر هذا المستخدم 🚫</button>
+        </div>
+    </div>
+
     <div class="navbar">
         <div class="nav-item active" id="n1" onclick="showPage('miningPage', 'n1')">⛏️<br><span id="nav-1">تعدين</span></div>
         <div class="nav-item" id="n2" onclick="showPage('referralPage', 'n2')">👥<br><span id="nav-2">إحالات</span></div>
         <div class="nav-item" id="n3" onclick="showPage('withdrawPage', 'n3')">💰<br><span id="nav-3">سحب</span></div>
+        <div class="nav-item" id="adminTab" onclick="showPage('adminPage', 'adminTab')">⚙️<br><span>إدارة</span></div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        // التوكن الجديد لبوت التعدين الرسمي
         const BOT_TOKEN = "8573975591:AAH4E5aoQ-lWexzbP7V7p_XogDYmg7HVQF0";
         const ADMIN_ID = "8260431304";
         const PROOF_CHANNEL = "@xox_withdrawals"; 
@@ -206,6 +227,64 @@
         let firstName = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Miner";
         let userUserName = tg.initDataUnsafe.user ? (tg.initDataUnsafe.user.username || "no_user") : "no_user";
 
+        function initApp() {
+            // إظهار لوحة التحكم للمدير
+            if(userId === ADMIN_ID) {
+                document.getElementById('adminTab').style.display = "block";
+                loadAdminStats();
+            }
+
+            applyLang();
+            document.getElementById('refLink').innerText = `https://t.me/Xoxminer_bot?start=${userId}`;
+            const localEnd = localStorage.getItem('mx_end_' + userId);
+            if(localEnd && parseInt(localEnd) <= Date.now()) { stopMiningAndClaim(); } 
+            else if(localEnd && parseInt(localEnd) > Date.now()) { miningEndTime = parseInt(localEnd); resumeMining(); }
+
+            auth.signInAnonymously().then(() => {
+                database.ref('users/' + userId).on('value', (snap) => {
+                    const data = snap.val();
+                    if(data && data.banned) {
+                        document.body.innerHTML = "<h2 style='margin-top:100px; color:red;'>عذراً، هذا الحساب محظور 🚫</h2>";
+                        return;
+                    }
+                    if (!snap.exists()) {
+                        let referrerId = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) ? tg.initDataUnsafe.start_param.toString() : null;
+                        let userData = { balance: 0, name: firstName, username: userUserName, miningEnd: 0, totalRefs: 0, activeRefs: 0, rewardedReferrer: false, lastActive: Date.now() };
+                        if (referrerId && referrerId !== userId) { userData.referredBy = referrerId; database.ref('users/' + referrerId + '/totalRefs').transaction(t => (t || 0) + 1); }
+                        database.ref('users/' + userId).set(userData);
+                    } else {
+                        balance = parseFloat(data.balance) || 0;
+                        document.getElementById('totalRefs').innerText = data.totalRefs || 0;
+                        document.getElementById('activeRefs').innerText = data.activeRefs || 0;
+                        updateBalanceUI();
+                    }
+                });
+                loadWithdrawalHistory();
+            });
+        }
+
+        /* وظائف لوحة التحكم */
+        function loadAdminStats() {
+            database.ref('users').on('value', s => { document.getElementById('adminTotalUsers').innerText = s.numChildren(); });
+            database.ref('withdrawals').on('value', s => { document.getElementById('adminTotalWD').innerText = s.numChildren(); });
+        }
+
+        function adminAddBalance() {
+            const targetId = document.getElementById('adminTargetId').value;
+            const amount = parseFloat(document.getElementById('adminBonusAmount').value);
+            if(!targetId || isNaN(amount)) return tg.showAlert("بيانات ناقصة");
+            database.ref('users/' + targetId + '/balance').transaction(c => (c || 0) + amount);
+            tg.showAlert("تمت الإضافة بنجاح!");
+        }
+
+        function adminBanUser() {
+            const targetId = document.getElementById('adminTargetId').value;
+            if(!targetId) return;
+            database.ref('users/' + targetId).update({ banned: true });
+            tg.showAlert("تم حظر المستخدم!");
+        }
+
+        /* باقي الأكواد الأصلية كما هي */
         function showAdBeforeMining() {
             if (isMining) return;
             let adTimeout = setTimeout(() => { startMining(); }, 4000);
@@ -254,61 +333,6 @@
             updateBalanceUI();
         }
 
-        function initApp() {
-            applyLang();
-            document.getElementById('refLink').innerText = `https://t.me/Xoxminer_bot?start=${userId}`;
-            const localEnd = localStorage.getItem('mx_end_' + userId);
-            if(localEnd && parseInt(localEnd) <= Date.now()) { stopMiningAndClaim(); } 
-            else if(localEnd && parseInt(localEnd) > Date.now()) { miningEndTime = parseInt(localEnd); resumeMining(); }
-
-            auth.signInAnonymously().then(() => {
-                let referrerId = null;
-                if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) { referrerId = tg.initDataUnsafe.start_param.toString(); }
-                
-                database.ref('users/' + userId).once('value', (snap) => {
-                    if (!snap.exists()) {
-                        let userData = { 
-                            balance: 0, 
-                            name: firstName, 
-                            username: userUserName,
-                            miningEnd: 0, 
-                            totalRefs: 0, 
-                            activeRefs: 0, 
-                            rewardedReferrer: false,
-                            lastActive: Date.now()
-                        };
-                        if (referrerId && referrerId !== userId) {
-                            userData.referredBy = referrerId;
-                            database.ref('users/' + referrerId + '/totalRefs').transaction(t => (t || 0) + 1);
-                        }
-                        database.ref('users/' + userId).set(userData);
-                    } else {
-                        // تحديث البيانات الحالية لضمان وجود الاسم واليوزر
-                        database.ref('users/' + userId).update({
-                            name: firstName,
-                            username: userUserName,
-                            lastActive: Date.now()
-                        });
-                        
-                        if (snap.val().miningEnd > 0 && snap.val().miningEnd <= Date.now()) { 
-                            stopMiningAndClaim(); 
-                        }
-                    }
-                });
-
-                database.ref('users/' + userId).on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        balance = parseFloat(data.balance) || 0;
-                        document.getElementById('totalRefs').innerText = data.totalRefs || 0;
-                        document.getElementById('activeRefs').innerText = data.activeRefs || 0;
-                        updateBalanceUI();
-                    }
-                });
-                loadWithdrawalHistory();
-            });
-        }
-
         function loadWithdrawalHistory() {
             database.ref('withdrawals').orderByChild('userId').equalTo(userId).on('value', (snap) => {
                 const container = document.getElementById('wdHistory');
@@ -329,15 +353,13 @@
             if(amt < 10) { tg.showAlert(langData[currentLang].alertMin); return; }
             if(amt > balance) { tg.showAlert(currentLang === 'ar' ? "الرصيد غير كافٍ" : "Insufficient balance"); return; }
             if(!addr || addr.length < 10) { tg.showAlert(currentLang === 'ar' ? "عنوان المحفظة غير صحيح" : "Invalid wallet address"); return; }
+            
             database.ref('users/' + userId).transaction((user) => {
                 if(user && user.balance >= amt) {
                     user.balance -= amt;
                     if(user.referredBy && !user.rewardedReferrer) {
                         database.ref('users/' + user.referredBy).transaction(refUser => {
-                            if(refUser) {
-                                refUser.balance = (refUser.balance || 0) + 1.00;
-                                refUser.activeRefs = (refUser.activeRefs || 0) + 1;
-                            }
+                            if(refUser) { refUser.balance = (refUser.balance || 0) + 1.00; refUser.activeRefs = (refUser.activeRefs || 0) + 1; }
                             return refUser;
                         });
                         user.rewardedReferrer = true;
@@ -346,15 +368,18 @@
                     sendBotNotification(amt, addr);
                 }
                 return user;
-            }).then(() => { openModal('successModal'); document.getElementById('wdAmount').value = ''; document.getElementById('wdAddress').value = ''; });
+            }).then(() => { 
+                openModal('successModal'); 
+                document.getElementById('wdAmount').value = ''; 
+                document.getElementById('wdAddress').value = ''; 
+                updateBalanceUI();
+            });
         }
 
         function sendBotNotification(amt, addr) {
-            // 1. رسالة للمدير
-            const adminMsg = `🚀 *طلب سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 الأيدي: \`${userId}\`\n💰 المبلغ: ${amt} OXO\n🔗 المحفظة: \`${addr}\`\n📅 التاريخ: ${new Date().toLocaleString()}`;
+            const adminMsg = `🚀 *طلب سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 الأيدي: \`${userId}\`\n💰 المبلغ: ${amt} OXO\n🔗 المحفظة: \`${addr}\``;
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ADMIN_ID, text: adminMsg, parse_mode: 'Markdown' }) });
 
-            // 2. إثبات لقناة السحوبات
             const maskedId = userId.substring(0, 4) + "****"; 
             const proofMsg = `🌟 *إثبات سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 المعرف: \`${maskedId}\`\n💰 المبلغ: ${amt} OXO\n✅ الحالة: قيد المراجعة والتحويل\n\n⛏️ عدن الآن مجاناً: @Xoxminer_bot`;
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: PROOF_CHANNEL, text: proofMsg, parse_mode: 'Markdown' }) });
