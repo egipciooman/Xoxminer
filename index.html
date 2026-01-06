@@ -176,9 +176,8 @@
         const tg = window.Telegram.WebApp;
         const BOT_TOKEN = "8573975591:AAH4E5aoQ-lWexzbP7V7p_XogDYmg7HVQF0";
         const ADMIN_ID = "8260431304";
-        const PROOF_CHANNEL = "@xox_withdrawals"; 
         
-        let currentLang = 'en';
+        let currentLang = 'ar';
         let miningEndTime = 0; 
         let miningTimer = null;
         let balance = 0.0;
@@ -200,7 +199,10 @@
 
         function initApp() {
             tg.expand();
-            if(userId === ADMIN_ID) document.getElementById('adminTab').style.display = "block";
+            if(userId === ADMIN_ID) {
+                document.getElementById('adminTab').style.display = "block";
+                adminLoadStats();
+            }
             applyLang();
             
             document.getElementById('refLink').innerText = `https://t.me/xoxminer_bot?start=${userId}`;
@@ -231,21 +233,60 @@
             loadWithdrawalHistory();
         }
 
-        // Updated for Monetag
+        // --- وظائف الإدارة (Admin) تعمل الآن بشكل كامل ---
+        function adminFetchUser() {
+            const target = document.getElementById('adminTargetId').value.trim();
+            if(!target) return;
+            database.ref('users/' + target).once('value', snap => {
+                const u = snap.val();
+                const display = document.getElementById('userInfoDisplay');
+                if(!u) { display.innerHTML = "❌ مستخدم غير موجود"; }
+                else {
+                    display.innerHTML = `👤 الاسم: ${u.name}<br>💰 الرصيد: ${u.balance} OXO<br>👥 إحالات: ${u.totalRefs}<br>🚫 محظور: ${u.banned ? 'نعم' : 'لا'}`;
+                }
+                display.style.display = 'block';
+            });
+        }
+        function adminAddBalance() {
+            const target = document.getElementById('adminTargetId').value.trim();
+            const amt = parseFloat(document.getElementById('adminBonusAmount').value);
+            if(!target || isNaN(amt)) return;
+            database.ref('users/' + target + '/balance').transaction(b => (b || 0) + amt);
+            tg.showAlert(`تمت إضافة ${amt} للمستخدم ${target}`);
+        }
+        function adminFinishMining() {
+            const target = document.getElementById('adminTargetId').value.trim();
+            if(!target) return;
+            database.ref('users/' + target).update({ miningEnd: 1 });
+            tg.showAlert("تم إنهاء الجلسة");
+        }
+        function adminResetBalance() {
+            const target = document.getElementById('adminTargetId').value.trim();
+            if(!target) return;
+            database.ref('users/' + target).update({ balance: 0 });
+            tg.showAlert("تم تصفير الرصيد");
+        }
+        function adminBanUser() {
+            const target = document.getElementById('adminTargetId').value.trim();
+            if(!target) return;
+            database.ref('users/' + target).update({ banned: true });
+            tg.showAlert("تم الحظر");
+        }
+        function adminLoadStats() {
+            database.ref('users').once('value', snap => {
+                document.getElementById('adminStatsDisplay').innerText = `إجمالي المستخدمين: ${snap.numChildren()}`;
+            });
+        }
+
+        // --- تكامل Monetag ---
         function handleMiningClick() {
             if(isMining) return;
-            
             if (typeof show_10427390 === 'function') {
                 show_10427390().then(() => {
-                    tg.showAlert(currentLang === 'ar' ? "تم عرض الإعلان بنجاح! يبدأ التعدين الآن." : "Ad seen! Mining starts now.");
+                    tg.showAlert(currentLang === 'ar' ? "رائع! يبدأ التعدين الآن." : "Great! Mining starts now.");
                     startMining();
-                }).catch(() => {
-                    // Start mining anyway if ad fails
-                    startMining();
-                });
-            } else {
-                startMining();
-            }
+                }).catch(() => { startMining(); });
+            } else { startMining(); }
         }
 
         function startMining() {
@@ -266,9 +307,7 @@
                     const h = Math.floor(rem / 3600), m = Math.floor((rem % 3600) / 60), s = rem % 60;
                     document.getElementById('timerDisplay').innerText = `${h}:${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
                     document.getElementById('sessionEarn').innerText = "+" + ((0.40 / 21600) * (21600 - rem)).toFixed(4);
-                } else {
-                    stopMiningAndClaim();
-                }
+                } else { stopMiningAndClaim(); }
             }, 1000);
         }
 
@@ -290,45 +329,30 @@
             if(isWithdrawing) return;
             const amt = parseFloat(document.getElementById('wdAmount').value);
             const addr = document.getElementById('wdAddress').value.trim();
-            
             if(isNaN(amt) || amt < 10) { tg.showAlert(langData[currentLang].alertMin); return; }
             if(amt > balance) { tg.showAlert(currentLang === 'ar' ? "رصيدك غير كافٍ" : "Insufficient balance"); return; }
-            if(addr.length < 10) { tg.showAlert(currentLang === 'ar' ? "عنوان المحفظة قصير جداً" : "Address too short"); return; }
-
             isWithdrawing = true;
-            const btn = document.getElementById('txt-wd-confirm');
-            btn.style.opacity = "0.5";
-            btn.innerText = "...";
-
             database.ref('users/' + userId).transaction(u => {
-                if(u && u.balance >= amt) {
-                    u.balance = Number((u.balance - amt).toFixed(2));
-                    return u;
-                }
+                if(u && u.balance >= amt) { u.balance = Number((u.balance - amt).toFixed(2)); return u; }
             }, (err, committed) => {
                 if(committed) {
                     database.ref('withdrawals').push({ userId, name: firstName, amount: amt, address: addr, status: 'pending', timestamp: Date.now() });
                     sendBotNotification(amt, addr);
                     openModal('successModal');
-                    document.getElementById('wdAmount').value = '';
-                } else {
-                    tg.showAlert("Error Processing");
                 }
                 isWithdrawing = false;
-                btn.style.opacity = "1";
-                btn.innerText = langData[currentLang].wdConfirm;
             });
         }
 
         function toggleLang() {
             currentLang = currentLang === 'ar' ? 'en' : 'ar';
             document.body.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-            document.getElementById('langBtn').innerText = currentLang === 'ar' ? 'English' : 'العربية';
             applyLang();
         }
 
         function applyLang() {
             const d = langData[currentLang];
+            document.getElementById('langBtn').innerText = currentLang === 'ar' ? 'English' : 'العربية';
             document.getElementById('txt-mining-center').innerText = d.miningCenter;
             if(!isMining) document.getElementById('timerDisplay').innerText = d.start;
             document.getElementById('txt-session-info').innerText = d.sessionInfo;
@@ -385,8 +409,7 @@
                 let h = '';
                 snap.forEach(x => {
                     const w = x.val();
-                    const s = w.status === 'pending' ? (currentLang==='ar'?'قيد المراجعة':'Pending') : (currentLang==='ar'?'اكتملت':'Completed');
-                    h = `<div class="history-item"><div><b>${w.amount.toFixed(2)} OXO</b><br><small>${new Date(w.timestamp).toLocaleDateString()}</small></div><span class="status-tag ${w.status}">${s}</span></div>` + h;
+                    h = `<div class="history-item"><div><b>${w.amount.toFixed(2)} OXO</b><br><small>${new Date(w.timestamp).toLocaleDateString()}</small></div><span class="status-tag ${w.status}">${w.status}</span></div>` + h;
                 });
                 c.innerHTML = h;
             });
