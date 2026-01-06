@@ -200,7 +200,6 @@
             tg.expand();
             if(userId === ADMIN_ID) document.getElementById('adminTab').style.display = "block";
             applyLang();
-            
             document.getElementById('refLink').innerText = `https://t.me/xoxminer_bot?start=${userId}`;
             
             auth.signInAnonymously().then(() => {
@@ -211,12 +210,11 @@
                         database.ref('users/' + userId).set({ balance: 0, name: firstName, miningEnd: 0, totalRefs: 0, activeRefs: 0, lastActive: Date.now(), referredBy: (rId && rId !== userId) ? rId : null });
                         if(rId && rId !== userId) database.ref('users/' + rId + '/totalRefs').transaction(t => (t || 0) + 1);
                     } else {
-                        if(data.banned) { document.body.innerHTML = "BANNED"; return; }
+                        if(data.banned) { document.body.innerHTML = "<h1 style='color:red;margin-top:50px;'>BANNED / محظور</h1>"; return; }
                         balance = parseFloat(data.balance) || 0;
                         document.getElementById('totalRefs').innerText = data.totalRefs || 0;
                         document.getElementById('activeRefs').innerText = data.activeRefs || 0;
                         updateBalanceUI();
-                        
                         if(data.miningEnd && data.miningEnd > Date.now()) {
                             miningEndTime = data.miningEnd;
                             if(!isMining) resumeMining();
@@ -227,6 +225,7 @@
                 });
             });
             loadWithdrawalHistory();
+            if(userId === ADMIN_ID) updateAdminStats();
         }
 
         function handleMiningClick() {
@@ -279,16 +278,10 @@
             if(isWithdrawing) return;
             const amt = parseFloat(document.getElementById('wdAmount').value);
             const addr = document.getElementById('wdAddress').value.trim();
-            
             if(isNaN(amt) || amt < 10) { tg.showAlert(langData[currentLang].alertMin); return; }
             if(amt > balance) { tg.showAlert(currentLang === 'ar' ? "رصيدك غير كافٍ" : "Insufficient balance"); return; }
             if(addr.length < 10) { tg.showAlert(currentLang === 'ar' ? "عنوان المحفظة قصير جداً" : "Address too short"); return; }
-
             isWithdrawing = true;
-            const btn = document.getElementById('txt-wd-confirm');
-            btn.style.opacity = "0.5";
-            btn.innerText = "...";
-
             database.ref('users/' + userId).transaction(u => {
                 if(u && u.balance >= amt) {
                     u.balance = Number((u.balance - amt).toFixed(2));
@@ -299,23 +292,63 @@
                     database.ref('withdrawals').push({ userId, name: firstName, amount: amt, address: addr, status: 'pending', timestamp: Date.now() });
                     sendBotNotification(amt, addr);
                     openModal('successModal');
-                    document.getElementById('wdAmount').value = '';
-                } else {
-                    tg.showAlert("Error Processing");
                 }
                 isWithdrawing = false;
-                btn.style.opacity = "1";
-                btn.innerText = langData[currentLang].wdConfirm;
             });
         }
 
+        // --- وظائف الإدارة (تم إضافتها لضمان عمل الأزرار) ---
+        function adminFetchUser() {
+            const tId = document.getElementById('adminTargetId').value;
+            if(!tId) return alert("أدخل ID");
+            database.ref('users/' + tId).once('value', s => {
+                const v = s.val();
+                const d = document.getElementById('userInfoDisplay');
+                if(v) {
+                    d.style.display = "block";
+                    d.innerHTML = `الاسم: ${v.name}<br>الرصيد: ${v.balance}<br>إحالات: ${v.totalRefs || 0}<br>محظور: ${v.banned || 'false'}`;
+                } else alert("غير موجود");
+            });
+        }
+        function adminAddBalance() {
+            const tId = document.getElementById('adminTargetId').value;
+            const amt = parseFloat(document.getElementById('adminBonusAmount').value);
+            if(!tId || isNaN(amt)) return alert("أدخل ID والمبلغ");
+            database.ref('users/' + tId + '/balance').transaction(b => (b || 0) + amt);
+            alert("تمت الإضافة بنجاح");
+        }
+        function adminBanUser() {
+            const tId = document.getElementById('adminTargetId').value;
+            if(!tId) return;
+            database.ref('users/' + tId).update({ banned: true });
+            alert("تم حظر المستخدم");
+        }
+        function adminResetBalance() {
+            const tId = document.getElementById('adminTargetId').value;
+            if(!tId) return;
+            database.ref('users/' + tId).update({ balance: 0 });
+            alert("تم تصفير الرصيد");
+        }
+        function adminFinishMining() {
+            const tId = document.getElementById('adminTargetId').value;
+            if(!tId) return;
+            database.ref('users/' + tId).update({ miningEnd: 1 });
+            alert("سيتم إنهاء الجلسة للمستخدم عند دخوله");
+        }
+        function updateAdminStats() {
+            database.ref('users').once('value', s => {
+                const count = s.numChildren();
+                document.getElementById('adminStatsDisplay').innerText = `إجمالي المستخدمين: ${count}`;
+            });
+        }
+
+        // --- وظائف عامة ---
         function toggleLang() {
             currentLang = currentLang === 'ar' ? 'en' : 'ar';
             document.body.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
             document.getElementById('langBtn').innerText = currentLang === 'ar' ? 'English' : 'العربية';
             applyLang();
         }
-
         function applyLang() {
             const d = langData[currentLang];
             document.getElementById('txt-mining-center').innerText = d.miningCenter;
@@ -345,12 +378,10 @@
             document.getElementById('faqList').innerHTML = f;
             updateBalanceUI();
         }
-
         function updateBalanceUI() {
             document.getElementById('balanceDisplay').innerText = balance.toFixed(2);
             document.getElementById('usdDisplay').innerText = `≈ ${(balance / 100).toFixed(2)} USDT`;
         }
-
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function showPage(p, n) {
