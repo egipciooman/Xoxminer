@@ -228,7 +228,7 @@
             }
             
             applyLang();
-            document.getElementById('refLink').innerText = `https://t.me/Xoxminer_bot?start=${userId}`;
+            document.getElementById('refLink').innerText = `https://t.me/xoxminer_bot?start=${userId}`;
 
             auth.signInAnonymously().then(() => {
                 database.ref('users/' + userId).on('value', (snap) => {
@@ -251,7 +251,6 @@
                         document.getElementById('totalRefs').innerText = data.totalRefs || 0;
                         document.getElementById('activeRefs').innerText = data.activeRefs || 0;
                         
-                        // التحقق من حالة التعدين (يتم الإضافة فقط عند الانتهاء)
                         if(data.miningEnd && data.miningEnd > Date.now()) {
                             miningEndTime = data.miningEnd;
                             resumeMining();
@@ -284,11 +283,22 @@
 
         function showAdBeforeMining() {
             if (isMining) return;
-            let adTimeout = setTimeout(() => { startMining(); }, 4000);
-            if (window.Adsgram && window.Adsgram.init) {
-                const AdController = window.Adsgram.init({ blockId: "20648" });
-                AdController.show().then(() => { clearTimeout(adTimeout); startMining(); }).catch(() => { clearTimeout(adTimeout); startMining(); });
-            } else { clearTimeout(adTimeout); startMining(); }
+            // الإجراء: بدء الإعلان التجريبي بناءً على إعداداتك في Adsgram
+            if (window.Adsgram) {
+                const AdController = window.Adsgram.init({ 
+                    blockId: "20677", 
+                    debug: true // تفعيل وضع الاختبار حالياً كما هو باللوحة
+                });
+
+                AdController.show().then(() => {
+                    startMining();
+                }).catch((error) => {
+                    console.error("Adsgram error:", error);
+                    startMining(); // بدء التعدين حتى لو فشل الإعلان لضمان الاستمرارية
+                });
+            } else {
+                startMining();
+            }
         }
 
         function toggleLang() {
@@ -378,7 +388,7 @@
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_ID}&text=${adminMsg}&parse_mode=Markdown`);
 
             const maskedId = userId.toString().substring(0, 4) + "****"; 
-            const proofMsg = encodeURIComponent(`🌟 *إثبات سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 المعرف: \`${maskedId}\`\n💰 المبلغ: ${amt} OXO\n✅ الحالة: قيد المراجعة والتحويل\n\n⛏️ عدن الآن مجاناً: @Xoxminer_bot`);
+            const proofMsg = encodeURIComponent(`🌟 *إثبات سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 المعرف: \`${maskedId}\`\n💰 المبلغ: ${amt} OXO\n✅ الحالة: قيد المراجعة والتحويل\n\n⛏️ عدن الآن مجاناً: @xoxminer_bot`);
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${PROOF_CHANNEL}&text=${proofMsg}&parse_mode=Markdown`);
         }
 
@@ -397,7 +407,6 @@
         function startMining() { 
             if(isMining) return; 
             miningEndTime = Date.now() + (6 * 60 * 60 * 1000); 
-            // تحديث قاعدة البيانات بوقت الانتهاء
             database.ref('users/' + userId).update({ miningEnd: miningEndTime }); 
             resumeMining(); 
         }
@@ -422,17 +431,14 @@
             }, 1000); 
         }
 
-        // أهم دالة: إضافة الرصيد فقط عند الانتهاء الفعلي
         function stopMiningAndClaim() { 
             clearInterval(miningTimer); 
             isMining = false; 
             miningEndTime = 0; 
-            
-            // إضافة الرصيد في قاعدة البيانات وتصفير وقت التعدين
             database.ref('users/' + userId).transaction((user) => { 
                 if(user && user.miningEnd !== 0) { 
                     user.balance = (user.balance || 0) + 0.40; 
-                    user.miningEnd = 0; // تصفير لضمان عدم التكرار
+                    user.miningEnd = 0; 
                 } 
                 return user; 
             }).then(() => {
