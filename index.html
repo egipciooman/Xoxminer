@@ -223,28 +223,41 @@
             if(userId === ADMIN_ID) {
                 document.getElementById('adminTab').style.display = "block";
                 database.ref('users').on('value', snap => {
-                    document.getElementById('adminStatsDisplay').innerText = "Total Users: " + snap.numChildren();
+                    document.getElementById('adminStatsDisplay').innerText = "Total Users: " + (snap.numChildren() || 0);
                 });
             }
+            
             applyLang();
             document.getElementById('refLink').innerText = `https://t.me/Xoxminer_bot?start=${userId}`;
-            const localEnd = localStorage.getItem('mx_end_' + userId);
-            if(localEnd && parseInt(localEnd) <= Date.now()) { stopMiningAndClaim(); } 
-            else if(localEnd && parseInt(localEnd) > Date.now()) { miningEndTime = parseInt(localEnd); resumeMining(); }
 
             auth.signInAnonymously().then(() => {
                 database.ref('users/' + userId).on('value', (snap) => {
                     const data = snap.val();
-                    if(data && data.banned) { document.body.innerHTML = "<h2 style='margin-top:100px; color:red;'>Account Banned 🚫</h2>"; return; }
+                    if(data && data.banned) { 
+                        document.body.innerHTML = "<h2 style='margin-top:100px; color:red;'>Account Banned 🚫</h2>"; 
+                        return; 
+                    }
+                    
                     if (!snap.exists()) {
                         let referrerId = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) ? tg.initDataUnsafe.start_param.toString() : null;
                         let userData = { balance: 0, name: firstName, username: userUserName, miningEnd: 0, totalRefs: 0, activeRefs: 0, rewardedReferrer: false, lastActive: Date.now() };
-                        if (referrerId && referrerId !== userId) { userData.referredBy = referrerId; database.ref('users/' + referrerId + '/totalRefs').transaction(t => (t || 0) + 1); }
+                        if (referrerId && referrerId !== userId) { 
+                            userData.referredBy = referrerId; 
+                            database.ref('users/' + referrerId + '/totalRefs').transaction(t => (t || 0) + 1); 
+                        }
                         database.ref('users/' + userId).set(userData);
                     } else {
                         balance = parseFloat(data.balance) || 0;
                         document.getElementById('totalRefs').innerText = data.totalRefs || 0;
                         document.getElementById('activeRefs').innerText = data.activeRefs || 0;
+                        
+                        // التحقق من حالة التعدين (يتم الإضافة فقط عند الانتهاء)
+                        if(data.miningEnd && data.miningEnd > Date.now()) {
+                            miningEndTime = data.miningEnd;
+                            resumeMining();
+                        } else if(data.miningEnd && data.miningEnd <= Date.now() && data.miningEnd !== 0) {
+                            stopMiningAndClaim(); 
+                        }
                         updateBalanceUI();
                     }
                 });
@@ -253,14 +266,20 @@
         }
 
         function adminAddBalance() {
-            const tid = document.getElementById('adminTargetId').value;
+            const tid = document.getElementById('adminTargetId').value.trim();
             const amt = parseFloat(document.getElementById('adminBonusAmount').value);
-            if(tid && !isNaN(amt)) { database.ref('users/'+tid+'/balance').transaction(c => (c||0)+amt); tg.showAlert("Done!"); }
+            if(tid && !isNaN(amt)) { 
+                database.ref('users/'+tid+'/balance').transaction(c => (c||0)+amt)
+                .then(() => {
+                    tg.showAlert(`Done! Sent ${amt} OXO to ${tid}`);
+                    document.getElementById('adminBonusAmount').value = '';
+                });
+            }
         }
 
         function adminBanUser() {
-            const tid = document.getElementById('adminTargetId').value;
-            if(tid) { database.ref('users/'+tid).update({banned: true}); tg.showAlert("Banned!"); }
+            const tid = document.getElementById('adminTargetId').value.trim();
+            if(tid) { database.ref('users/'+tid).update({banned: true}).then(() => tg.showAlert("Banned!")); }
         }
 
         function showAdBeforeMining() {
@@ -327,7 +346,7 @@
 
         function handleWithdraw() {
             const amt = parseFloat(document.getElementById('wdAmount').value);
-            const addr = document.getElementById('wdAddress').value;
+            const addr = document.getElementById('wdAddress').value.trim();
             if(amt < 10) { tg.showAlert(langData[currentLang].alertMin); return; }
             if(amt > balance) { tg.showAlert(currentLang === 'ar' ? "الرصيد غير كافٍ" : "Insufficient balance"); return; }
             if(!addr || addr.length < 10) { tg.showAlert(currentLang === 'ar' ? "عنوان المحفظة غير صحيح" : "Invalid wallet address"); return; }
@@ -375,12 +394,78 @@
             if(header) header.innerText = (currentLang === 'ar' ? 'رصيد ' : 'Balance ') + firstName + (currentLang === 'ar' ? ' في xoxminer ☁️' : ' in xoxminer ☁️'); 
         }
 
-        function startMining() { if(isMining) return; miningEndTime = Date.now() + (6 * 60 * 60 * 1000); localStorage.setItem('mx_end_' + userId, miningEndTime); database.ref('users/' + userId).update({ miningEnd: miningEndTime }); resumeMining(); }
-        function resumeMining() { if(isMining) return; isMining = true; document.getElementById('mineBtn').classList.add('active'); document.getElementById('sessionEarn').classList.add('visible'); if (miningTimer) clearInterval(miningTimer); miningTimer = setInterval(() => { const now = Date.now(); const remaining = Math.floor((miningEndTime - now) / 1000); if (remaining > 0) { const h = Math.floor(remaining / 3600), m = Math.floor((remaining % 3600) / 60), s = remaining % 60; document.getElementById('timerDisplay').innerText = `${h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`; let earned = (0.40 / 21600) * (21600 - remaining); document.getElementById('sessionEarn').innerText = "+" + earned.toFixed(4); } else { stopMiningAndClaim(); } }, 1000); }
-        function stopMiningAndClaim() { clearInterval(miningTimer); isMining = false; miningEndTime = 0; localStorage.removeItem('mx_end_' + userId); database.ref('users/' + userId).transaction((user) => { if(user) { user.balance = (user.balance || 0) + 0.40; user.miningEnd = 0; } return user; }); document.getElementById('mineBtn').classList.remove('active'); document.getElementById('sessionEarn').classList.remove('visible'); document.getElementById('timerDisplay').innerText = langData[currentLang].start; tg.showAlert(currentLang === 'ar' ? "اكتمل التعدين! +0.40 OXO" : "Mining Complete! +0.40 OXO"); }
-        function copyLink() { navigator.clipboard.writeText(document.getElementById('refLink').innerText); tg.showAlert(langData[currentLang].alertCopy); }
-        function calculateWithdraw() { let amt = document.getElementById('wdAmount').value; document.getElementById('wdPreview').innerHTML = `<span id="txt-wd-preview-label">${langData[currentLang].wdReceive}</span>: ${(amt / 100).toFixed(2)} USDT`; }
-        function showPage(pId, nId) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); document.getElementById(pId).classList.add('active'); document.getElementById(nId).classList.add('active'); window.scrollTo(0,0); }
+        function startMining() { 
+            if(isMining) return; 
+            miningEndTime = Date.now() + (6 * 60 * 60 * 1000); 
+            // تحديث قاعدة البيانات بوقت الانتهاء
+            database.ref('users/' + userId).update({ miningEnd: miningEndTime }); 
+            resumeMining(); 
+        }
+
+        function resumeMining() { 
+            if(isMining) return; 
+            isMining = true; 
+            document.getElementById('mineBtn').classList.add('active'); 
+            document.getElementById('sessionEarn').classList.add('visible'); 
+            if (miningTimer) clearInterval(miningTimer); 
+            miningTimer = setInterval(() => { 
+                const now = Date.now(); 
+                const remaining = Math.floor((miningEndTime - now) / 1000); 
+                if (remaining > 0) { 
+                    const h = Math.floor(remaining / 3600), m = Math.floor((remaining % 3600) / 60), s = remaining % 60; 
+                    document.getElementById('timerDisplay').innerText = `${h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`; 
+                    let earned = (0.40 / 21600) * (21600 - remaining); 
+                    document.getElementById('sessionEarn').innerText = "+" + earned.toFixed(4); 
+                } else { 
+                    stopMiningAndClaim(); 
+                } 
+            }, 1000); 
+        }
+
+        // أهم دالة: إضافة الرصيد فقط عند الانتهاء الفعلي
+        function stopMiningAndClaim() { 
+            clearInterval(miningTimer); 
+            isMining = false; 
+            miningEndTime = 0; 
+            
+            // إضافة الرصيد في قاعدة البيانات وتصفير وقت التعدين
+            database.ref('users/' + userId).transaction((user) => { 
+                if(user && user.miningEnd !== 0) { 
+                    user.balance = (user.balance || 0) + 0.40; 
+                    user.miningEnd = 0; // تصفير لضمان عدم التكرار
+                } 
+                return user; 
+            }).then(() => {
+                document.getElementById('mineBtn').classList.remove('active'); 
+                document.getElementById('sessionEarn').classList.remove('visible'); 
+                document.getElementById('timerDisplay').innerText = langData[currentLang].start; 
+                tg.showAlert(currentLang === 'ar' ? "اكتملت جلسة التعدين! تم إضافة 0.40 OXO إلى رصيدك." : "Mining Session Complete! 0.40 OXO added."); 
+            });
+        }
+
+        function copyLink() { 
+            const link = document.getElementById('refLink').innerText;
+            const el = document.createElement('textarea');
+            el.value = link;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            tg.showAlert(langData[currentLang].alertCopy); 
+        }
+
+        function calculateWithdraw() { 
+            let amt = document.getElementById('wdAmount').value; 
+            document.getElementById('wdPreview').innerHTML = `<span id="txt-wd-preview-label">${langData[currentLang].wdReceive}</span>: ${(amt / 100).toFixed(2)} USDT`; 
+        }
+
+        function showPage(pId, nId) { 
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
+            document.getElementById(pId).classList.add('active'); 
+            document.getElementById(nId).classList.add('active'); 
+            window.scrollTo(0,0); 
+        }
     </script>
 </body>
 </html>
