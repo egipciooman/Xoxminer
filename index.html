@@ -46,12 +46,8 @@
         .pending { background: rgba(255, 215, 0, 0.1); color: var(--gold); }
         .completed { background: rgba(34, 197, 94, 0.1); color: var(--success); }
         .faq-btn { background: rgba(0, 242, 254, 0.1); color: var(--primary); border: 1px solid var(--primary); padding: 5px 15px; border-radius: 10px; font-size: 12px; cursor: pointer; margin-top: 10px; }
-        
-        /* استايل لوحة التحكم المضاف */
         #adminTab { display: none; }
-        .admin-card { border: 2px dashed var(--primary); margin-top: 20px; background: rgba(0, 242, 254, 0.05); }
-        .admin-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-
+        .admin-card { border: 2px dashed var(--primary); background: rgba(0, 242, 254, 0.05); }
         @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
         @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
@@ -143,16 +139,12 @@
 
     <div id="adminPage" class="page">
         <div class="card admin-card">
-            <h3 style="color:var(--primary); margin:0 0 15px 0;">لوحة إدارة xoxminer ⚙️</h3>
-            <div class="admin-stat-grid">
-                <div class="stat-box"><small>إجمالي المستخدمين</small><span id="adminTotalUsers">0</span></div>
-                <div class="stat-box"><small>إجمالي السحوبات</small><span id="adminTotalWD">0</span></div>
-            </div>
-            <hr style="opacity:0.1; margin:15px 0;">
-            <input type="text" id="adminTargetId" placeholder="أدخل أيدي (ID) المستخدم">
-            <input type="number" id="adminBonusAmount" placeholder="المبلغ المراد إضافته">
-            <button class="main-btn" onclick="adminAddBalance()" style="margin-bottom:10px;">إرسال هدية / رصيد 🎁</button>
-            <button class="main-btn" onclick="adminBanUser()" style="background:var(--danger);">حظر هذا المستخدم 🚫</button>
+            <h3>لوحة الإدارة الاحترافية ⚙️</h3>
+            <p id="adminStatsDisplay" style="font-size: 12px; color: var(--primary);"></p>
+            <input type="text" id="adminTargetId" placeholder="User ID">
+            <input type="number" id="adminBonusAmount" placeholder="Amount">
+            <button class="main-btn" onclick="adminAddBalance()">إرسال رصيد 🎁</button>
+            <button class="main-btn" onclick="adminBanUser()" style="background:var(--danger); margin-top:5px;">حظر المستخدم 🚫</button>
         </div>
     </div>
 
@@ -228,12 +220,12 @@
         let userUserName = tg.initDataUnsafe.user ? (tg.initDataUnsafe.user.username || "no_user") : "no_user";
 
         function initApp() {
-            // إظهار لوحة التحكم للمدير
             if(userId === ADMIN_ID) {
                 document.getElementById('adminTab').style.display = "block";
-                loadAdminStats();
+                database.ref('users').on('value', snap => {
+                    document.getElementById('adminStatsDisplay').innerText = "Total Users: " + snap.numChildren();
+                });
             }
-
             applyLang();
             document.getElementById('refLink').innerText = `https://t.me/Xoxminer_bot?start=${userId}`;
             const localEnd = localStorage.getItem('mx_end_' + userId);
@@ -243,10 +235,7 @@
             auth.signInAnonymously().then(() => {
                 database.ref('users/' + userId).on('value', (snap) => {
                     const data = snap.val();
-                    if(data && data.banned) {
-                        document.body.innerHTML = "<h2 style='margin-top:100px; color:red;'>عذراً، هذا الحساب محظور 🚫</h2>";
-                        return;
-                    }
+                    if(data && data.banned) { document.body.innerHTML = "<h2 style='margin-top:100px; color:red;'>Account Banned 🚫</h2>"; return; }
                     if (!snap.exists()) {
                         let referrerId = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) ? tg.initDataUnsafe.start_param.toString() : null;
                         let userData = { balance: 0, name: firstName, username: userUserName, miningEnd: 0, totalRefs: 0, activeRefs: 0, rewardedReferrer: false, lastActive: Date.now() };
@@ -263,28 +252,17 @@
             });
         }
 
-        /* وظائف لوحة التحكم */
-        function loadAdminStats() {
-            database.ref('users').on('value', s => { document.getElementById('adminTotalUsers').innerText = s.numChildren(); });
-            database.ref('withdrawals').on('value', s => { document.getElementById('adminTotalWD').innerText = s.numChildren(); });
-        }
-
         function adminAddBalance() {
-            const targetId = document.getElementById('adminTargetId').value;
-            const amount = parseFloat(document.getElementById('adminBonusAmount').value);
-            if(!targetId || isNaN(amount)) return tg.showAlert("بيانات ناقصة");
-            database.ref('users/' + targetId + '/balance').transaction(c => (c || 0) + amount);
-            tg.showAlert("تمت الإضافة بنجاح!");
+            const tid = document.getElementById('adminTargetId').value;
+            const amt = parseFloat(document.getElementById('adminBonusAmount').value);
+            if(tid && !isNaN(amt)) { database.ref('users/'+tid+'/balance').transaction(c => (c||0)+amt); tg.showAlert("Done!"); }
         }
 
         function adminBanUser() {
-            const targetId = document.getElementById('adminTargetId').value;
-            if(!targetId) return;
-            database.ref('users/' + targetId).update({ banned: true });
-            tg.showAlert("تم حظر المستخدم!");
+            const tid = document.getElementById('adminTargetId').value;
+            if(tid) { database.ref('users/'+tid).update({banned: true}); tg.showAlert("Banned!"); }
         }
 
-        /* باقي الأكواد الأصلية كما هي */
         function showAdBeforeMining() {
             if (isMining) return;
             let adTimeout = setTimeout(() => { startMining(); }, 4000);
@@ -377,12 +355,12 @@
         }
 
         function sendBotNotification(amt, addr) {
-            const adminMsg = `🚀 *طلب سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 الأيدي: \`${userId}\`\n💰 المبلغ: ${amt} OXO\n🔗 المحفظة: \`${addr}\``;
-            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ADMIN_ID, text: adminMsg, parse_mode: 'Markdown' }) });
+            const adminMsg = encodeURIComponent(`🚀 *طلب سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 الأيدي: \`${userId}\`\n💰 المبلغ: ${amt} OXO\n🔗 المحفظة: \`${addr}\``);
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_ID}&text=${adminMsg}&parse_mode=Markdown`);
 
-            const maskedId = userId.substring(0, 4) + "****"; 
-            const proofMsg = `🌟 *إثبات سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 المعرف: \`${maskedId}\`\n💰 المبلغ: ${amt} OXO\n✅ الحالة: قيد المراجعة والتحويل\n\n⛏️ عدن الآن مجاناً: @Xoxminer_bot`;
-            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: PROOF_CHANNEL, text: proofMsg, parse_mode: 'Markdown' }) });
+            const maskedId = userId.toString().substring(0, 4) + "****"; 
+            const proofMsg = encodeURIComponent(`🌟 *إثبات سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 المعرف: \`${maskedId}\`\n💰 المبلغ: ${amt} OXO\n✅ الحالة: قيد المراجعة والتحويل\n\n⛏️ عدن الآن مجاناً: @Xoxminer_bot`);
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${PROOF_CHANNEL}&text=${proofMsg}&parse_mode=Markdown`);
         }
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
