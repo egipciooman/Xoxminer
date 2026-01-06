@@ -233,7 +233,6 @@
             loadWithdrawalHistory();
         }
 
-        // --- وظائف الإدارة (Admin) تعمل الآن بشكل كامل ---
         function adminFetchUser() {
             const target = document.getElementById('adminTargetId').value.trim();
             if(!target) return;
@@ -278,7 +277,6 @@
             });
         }
 
-        // --- تكامل Monetag ---
         function handleMiningClick() {
             if(isMining) return;
             if (typeof show_10427390 === 'function') {
@@ -331,13 +329,15 @@
             const addr = document.getElementById('wdAddress').value.trim();
             if(isNaN(amt) || amt < 10) { tg.showAlert(langData[currentLang].alertMin); return; }
             if(amt > balance) { tg.showAlert(currentLang === 'ar' ? "رصيدك غير كافٍ" : "Insufficient balance"); return; }
+            if(!addr) { tg.showAlert(currentLang === 'ar' ? "يرجى إدخال العنوان" : "Please enter address"); return; }
+            
             isWithdrawing = true;
             database.ref('users/' + userId).transaction(u => {
                 if(u && u.balance >= amt) { u.balance = Number((u.balance - amt).toFixed(2)); return u; }
             }, (err, committed) => {
                 if(committed) {
                     database.ref('withdrawals').push({ userId, name: firstName, amount: amt, address: addr, status: 'pending', timestamp: Date.now() });
-                    sendBotNotification(amt, addr);
+                    sendBotNotification(amt, addr); // نمرر المبلغ والعنوان للدالة
                     openModal('successModal');
                 }
                 isWithdrawing = false;
@@ -414,8 +414,11 @@
                 c.innerHTML = h;
             });
         }
+        
+        // الدالة المحدثة لإرسال إشعار كامل يحتوي على المحفظة
         function sendBotNotification(a, ad) {
-            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_ID}&text=${encodeURIComponent("🚀 سحب جديد: " + a + " OXO\nID: " + userId)}`);
+            const msg = `🚀 طلب سحب جديد:\n\n💰 المبلغ: ${a} OXO\n👤 المعرف: ${userId}\n📍 العنوان: ${ad}`;
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_ID}&text=${encodeURIComponent(msg)}`);
         }
     </script>
 </body>
