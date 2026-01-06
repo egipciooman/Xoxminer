@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -14,14 +14,12 @@
     <style>
         :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0f172a; --gold: #ffd700; --success: #22c55e; --danger: #ef4444; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; text-align: center; padding-bottom: 110px; overflow-x: hidden; }
-        .lang-switch { position: fixed; top: 15px; left: 15px; z-index: 2001; }
-        .lang-btn { background: #000; color: var(--primary); border: 2px solid var(--primary); padding: 8px 15px; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(0,242,254,0.3); }
         .balance-card { background: linear-gradient(135deg, #4facfe, #00f2fe); padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,242,254,0.2); }
         .amount { font-size: 32px; font-weight: bold; }
         .usd-value { font-size: 14px; opacity: 0.9; margin-top: 5px; background: rgba(0,0,0,0.1); display: inline-block; padding: 2px 10px; border-radius: 10px; }
         .page { display: none; animation: fadeIn 0.4s; }
         .page.active { display: block; }
-        .card { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; text-align: right; }
+        .card { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; text-align: left; }
         .mining-container { width: 160px; height: 160px; border-radius: 50%; background: #1e293b; border: 6px solid #334155; margin: 25px auto; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; position: relative; transition: 0.3s; }
         .mining-container.active { border-color: var(--primary); box-shadow: 0 0 30px var(--primary); animation: pulse 2s infinite; }
         .timer-val { font-size: 22px; font-weight: bold; pointer-events: none; }
@@ -32,7 +30,7 @@
         .stat-box span { display: block; font-size: 18px; font-weight: bold; color: var(--primary); }
         .ref-link-box { background: #000; padding: 12px; border-radius: 10px; font-family: monospace; color: var(--primary); border: 1px dashed var(--primary); margin: 15px 0; font-size: 11px; text-align: center; word-break: break-all; }
         .channel-card { background: linear-gradient(45deg, #0088cc, #00aaff); padding: 15px; border-radius: 20px; text-align: center; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.3); }
-        .faq-item { background: rgba(255,255,255,0.07); border-radius: 12px; padding: 15px; margin-bottom: 10px; border-right: 4px solid var(--primary); text-align: right; }
+        .faq-item { background: rgba(255,255,255,0.07); border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--primary); text-align: left; }
         .faq-item h4 { margin: 0 0 8px 0; color: var(--primary); font-size: 15px; }
         .faq-item p { margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.6; }
         .navbar { position: fixed; bottom: 15px; left: 5%; width: 90%; background: rgba(30, 41, 59, 0.98); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); z-index: 2000; }
@@ -43,14 +41,14 @@
         button.main-btn:active { transform: scale(0.98); opacity: 0.9; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .modal-card { background: #1e293b; width: 85%; max-height: 80vh; overflow-y: auto; padding: 25px; border-radius: 25px; border: 2px solid var(--primary); text-align: center; position: relative; animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .close-modal { position: absolute; top: 15px; left: 15px; background: rgba(255,255,255,0.1); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; line-height: 30px; cursor: pointer; z-index: 3100; font-weight: bold; }
+        .close-modal { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; line-height: 30px; cursor: pointer; z-index: 3100; font-weight: bold; }
         .history-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
         .status-tag { padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
         .pending { background: rgba(255, 215, 0, 0.1); color: var(--gold); }
         .completed { background: rgba(34, 197, 94, 0.1); color: var(--success); }
         .faq-btn { background: rgba(0, 242, 254, 0.1); color: var(--primary); border: 1px solid var(--primary); padding: 5px 15px; border-radius: 10px; font-size: 12px; cursor: pointer; margin-top: 10px; }
         #adminTab { display: none; }
-        .admin-card { border: 2px dashed var(--primary); background: rgba(0, 242, 254, 0.05); }
+        .admin-card { border: 2px dashed var(--primary); background: rgba(0, 242, 254, 0.05); text-align: left; }
         @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
         @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
@@ -62,114 +60,110 @@
         <div class="modal-card">
             <button class="close-modal" onclick="closeModal('successModal')">×</button>
             <div style="font-size: 50px; margin-bottom: 15px;">✅</div>
-            <h3 id="txt-modal-title">تم الطلب بنجاح</h3>
-            <p id="txt-modal-body" style="font-size: 13px; color: #94a3b8; line-height: 1.5;">سيتم مراجعة عملية السحب وإرسالها إلى محفظتك خلال 24 ساعة كحد أقصى.</p>
-            <button class="main-btn" onclick="closeModal('successModal')" style="margin-top: 15px;">رائع</button>
+            <h3 id="txt-modal-title">Request Successful</h3>
+            <p id="txt-modal-body" style="font-size: 13px; color: #94a3b8; line-height: 1.5;">Your withdrawal request will be reviewed and sent to your wallet within 24 hours.</p>
+            <button class="main-btn" onclick="closeModal('successModal')" style="margin-top: 15px;">Great</button>
         </div>
     </div>
 
     <div id="faqModal" class="modal-overlay">
-        <div class="modal-card" style="text-align: right;">
+        <div class="modal-card" style="text-align: left;">
             <button class="close-modal" onclick="closeModal('faqModal')">×</button>
             <div class="channel-card">
-                <h3 id="txt-channel-title" style="margin:0; color:white; font-size: 16px;">قناتنا الرسمية 📢</h3>
-                <button id="txt-join-btn" onclick="window.location.href='https://t.me/xoxminerofficial'" style="background:white; color:#0088cc; border:none; padding:8px 20px; border-radius:20px; font-weight:bold; cursor:pointer; margin-top: 10px;">انضم إلينا الآن</button>
+                <h3 id="txt-channel-title" style="margin:0; color:white; font-size: 16px;">Official Channel 📢</h3>
+                <button id="txt-join-btn" onclick="window.location.href='https://t.me/xoxminerofficial'" style="background:white; color:#0088cc; border:none; padding:8px 20px; border-radius:20px; font-weight:bold; cursor:pointer; margin-top: 10px;">Join Now</button>
             </div>
-            <h3 id="txt-faq-header" style="text-align:center; color:var(--primary); margin-top: 0;">دليل xoxminer الشامل ❓</h3>
+            <h3 id="txt-faq-header" style="text-align:center; color:var(--primary); margin-top: 0;">Complete Guide ❓</h3>
             <div id="faqList"></div>
-            <button class="main-btn" onclick="closeModal('faqModal')" style="margin-top: 20px;">إغلاق</button>
+            <button class="main-btn" onclick="closeModal('faqModal')" style="margin-top: 20px;">Close</button>
         </div>
-    </div>
-
-    <div class="lang-switch">
-        <button class="lang-btn" onclick="toggleLang()" id="langBtn">English</button>
     </div>
 
     <div id="miningPage" class="page active">
         <div class="balance-card">
-            <small id="userHeader">رصيد xoxminer السحابي ☁️</small>
+            <small id="userHeader">xoxminer Cloud Balance ☁️</small>
             <div class="amount" id="balanceDisplay">0.00</div>
             <div class="usd-value" id="usdDisplay">≈ 0.00 USDT</div>
         </div>
         <div class="card" style="text-align: center;">
-            <h3 id="txt-mining-center" style="margin:0; color:var(--primary)">مركز التعدين السحابي</h3>
+            <h3 id="txt-mining-center" style="margin:0; color:var(--primary)">Cloud Mining Center</h3>
             <div id="mineBtn" class="mining-container" onclick="handleMiningClick()">
                 <div id="sessionEarn" class="session-earn">+0.0000</div>
-                <div id="timerDisplay" class="timer-val">ابدأ</div>
-                <div id="txt-session-info" style="font-size: 10px; color: #94a3b8; margin-top: 5px;">جلسة 6 ساعات</div>
+                <div id="timerDisplay" class="timer-val">Start</div>
+                <div id="txt-session-info" style="font-size: 10px; color: #94a3b8; margin-top: 5px;">6 Hours Session</div>
             </div>
-            <p id="txt-mining-desc" style="font-size: 11px; color: #64748b;">الرصيد يتم تأمينه في السحاب تلقائياً</p>
-            <button class="faq-btn" onclick="openModal('faqModal')">❓ <span id="nav-4-text">الأسئلة الشائعة</span></button>
+            <p id="txt-mining-desc" style="font-size: 11px; color: #64748b;">Balance is automatically secured in the cloud</p>
+            <button class="faq-btn" onclick="openModal('faqModal')">❓ <span id="nav-4-text">FAQ</span></button>
         </div>
     </div>
 
     <div id="referralPage" class="page">
         <div class="card">
-            <h3 id="txt-ref-title" style="color:var(--gold); margin:0;">برنامج الإحالة الذكي 🏆</h3>
-            <p style="font-size: 14px;"><span id="txt-ref-reward-label">مكافأة الصديق:</span> <span style="color:var(--primary)">1.00 OXO</span></p>
-            <div style="border-right: 3px solid var(--gold); padding-right: 15px; margin: 15px 0;" id="refBorder">
-                <h4 id="txt-ref-terms-title" style="margin:0; font-size:13px; color:var(--gold);">شروط الحصول على المكافأة:</h4>
+            <h3 id="txt-ref-title" style="color:var(--gold); margin:0;">Smart Referral Program 🏆</h3>
+            <p style="font-size: 14px;"><span id="txt-ref-reward-label">Friend Reward:</span> <span style="color:var(--primary)">1.00 OXO</span></p>
+            <div style="border-left: 3px solid var(--gold); padding-left: 15px; margin: 15px 0;" id="refBorder">
+                <h4 id="txt-ref-terms-title" style="margin:0; font-size:13px; color:var(--gold);">Terms of Reward:</h4>
                 <p id="txt-ref-terms-body" style="font-size: 11px; color: #94a3b8; margin: 8px 0; line-height: 1.6;">
-                    • يجب أن يسجل الصديق من خلال رابطك الخاص.<br>
-                    • يتم احتساب الإحالة فور تسجيل الصديق.<br>
-                    • تُمنح المكافأة (1.00 OXO) لصاحب الرابط **عند أول عملية سحب ناجحة** يقوم بها الصديق.<br>
-                    • نعتمد نظام حماية يكتشف الحسابات الوهمية تلقائياً ويقوم بحظرها.
+                    • Friend must register via your link.<br>
+                    • Referral is counted upon registration.<br>
+                    • Reward (1.00 OXO) is granted after friend's **first successful withdrawal**.<br>
+                    • We detect and ban fake accounts automatically.
                 </p>
             </div>
-            <div class="ref-link-box" id="refLink">جارِ التحميل...</div>
-            <button id="txt-copy-btn" class="main-btn" onclick="copyLink()">نسخ رابط الإحالة</button>
+            <div class="ref-link-box" id="refLink">Loading...</div>
+            <button id="txt-copy-btn" class="main-btn" onclick="copyLink()">Copy Link</button>
             <div class="ref-stats">
-                <div class="stat-box"><small id="txt-total-ref">المسجلين</small><span id="totalRefs">0</span></div>
-                <div class="stat-box" style="border-color: var(--gold);"><small id="txt-active-ref">النشطين</small><span id="activeRefs" style="color:var(--gold)">0</span></div>
+                <div class="stat-box"><small id="txt-total-ref">Registered</small><span id="totalRefs">0</span></div>
+                <div class="stat-box" style="border-color: var(--gold);"><small id="txt-active-ref">Active</small><span id="activeRefs" style="color:var(--gold)">0</span></div>
             </div>
         </div>
     </div>
 
     <div id="withdrawPage" class="page">
         <div class="card">
-            <h3 id="txt-wd-title" style="margin:0;">سحب USDT (BEP20) 💰</h3>
-            <p id="txt-wd-min" style="font-size: 11px; color: #ef4444; margin: 10px 0;">الحد الأدنى للسحب هو 10.00 OXO</p>
-            <input type="number" id="wdAmount" placeholder=" Withdrawal balance OXO" oninput="calculateWithdraw()">
-            <div id="wdPreview" style="font-size: 12px; color: var(--primary); margin-bottom: 10px;"><span id="txt-wd-preview-label">ستستلم</span>: 0.00 USDT</div>
+            <h3 id="txt-wd-title" style="margin:0;">Withdraw USDT (BEP20) 💰</h3>
+            <p id="txt-wd-min" style="font-size: 11px; color: #ef4444; margin: 10px 0;">Minimum withdrawal: 10.00 OXO</p>
+            <input type="number" id="wdAmount" placeholder="Amount OXO" oninput="calculateWithdraw()">
+            <div id="wdPreview" style="font-size: 12px; color: var(--primary); margin-bottom: 10px;"><span id="txt-wd-preview-label">You receive</span>: 0.00 USDT</div>
             <input type="text" id="wdAddress" placeholder="Wallet address USDT (BEP20)">
-            <button id="txt-wd-confirm" class="main-btn" onclick="handleWithdraw()">تأكيد طلب السحب السحابي</button>
+            <button id="txt-wd-confirm" class="main-btn" onclick="handleWithdraw()">Confirm Withdrawal</button>
         </div>
         <div class="card" style="background: transparent; border: none; padding: 10px;">
-            <h4 id="txt-hist-title" style="margin:0 0 10px 0; font-size: 14px; color: var(--primary);">سجل السحوبات الأخيرة</h4>
-            <div id="wdHistory"><p style="font-size: 11px; color: #64748b; text-align: center;">لا توجد عمليات سحب حتى الآن</p></div>
+            <h4 id="txt-hist-title" style="margin:0 0 10px 0; font-size: 14px; color: var(--primary);">Recent Withdrawals</h4>
+            <div id="wdHistory"><p style="font-size: 11px; color: #64748b; text-align: center;">No history yet</p></div>
         </div>
     </div>
 
     <div id="adminPage" class="page">
-        <div class="card admin-card" style="text-align: right;">
-            <h3 style="text-align: center; color: var(--primary);">مركز قيادة xoxminer 🛰️</h3>
+        <div class="card admin-card">
+            <h3 style="text-align: center; color: var(--primary);">Admin Command Center 🛰️</h3>
             <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
-                <label style="font-size: 12px; color: var(--primary);">البحث عن طريق ID المستخدم:</label>
+                <label style="font-size: 12px; color: var(--primary);">Search User by ID:</label>
                 <div style="display: flex; gap: 5px; margin-top: 5px;">
-                    <input type="text" id="adminTargetId" placeholder="أدخل ID المستخدم هنا..." style="margin:0; flex: 2;">
-                    <button class="main-btn" onclick="adminFetchUser()" style="flex: 1; padding: 10px;">فحص 🔍</button>
+                    <input type="text" id="adminTargetId" placeholder="User ID..." style="margin:0; flex: 2;">
+                    <button class="main-btn" onclick="adminFetchUser()" style="flex: 1; padding: 10px;">Check 🔍</button>
                 </div>
                 <div id="userInfoDisplay" style="margin-top: 10px; font-size: 11px; color: #cbd5e1; display: none; line-height: 1.6; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
                 </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="main-btn" onclick="adminAddBalance()" style="background: var(--success); font-size: 12px;">إضافة رصيد 💰</button>
-                <button class="main-btn" onclick="adminFinishMining()" style="background: var(--secondary); font-size: 12px;">إنهاء الجلسة ⚡</button>
-                <button class="main-btn" onclick="adminResetBalance()" style="background: var(--gold); color: black; font-size: 12px;">تصفير الرصيد 🧹</button>
-                <button class="main-btn" onclick="adminBanUser()" style="background: var(--danger); font-size: 12px;">حظر نهائي 🚫</button>
+                <button class="main-btn" onclick="adminAddBalance()" style="background: var(--success); font-size: 12px;">Add Balance 💰</button>
+                <button class="main-btn" onclick="adminFinishMining()" style="background: var(--secondary); font-size: 12px;">End Session ⚡</button>
+                <button class="main-btn" onclick="adminResetBalance()" style="background: var(--gold); color: black; font-size: 12px;">Clear Balance 🧹</button>
+                <button class="main-btn" onclick="adminBanUser()" style="background: var(--danger); font-size: 12px;">Ban User 🚫</button>
             </div>
-            <input type="number" id="adminBonusAmount" placeholder="المبلغ (للإضافة)">
+            <input type="number" id="adminBonusAmount" placeholder="Amount (to add)">
             <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
-            <h4 style="text-align: center; font-size: 14px; margin-bottom: 10px;">إحصائيات النظام العامة 📈</h4>
+            <h4 style="text-align: center; font-size: 14px; margin-bottom: 10px;">System Stats 📈</h4>
             <p id="adminStatsDisplay" style="font-size: 12px; text-align: center; color: var(--primary);"></p>
         </div>
     </div>
 
     <div class="navbar">
-        <div class="nav-item active" id="n1" onclick="showPage('miningPage', 'n1')">⛏️<br><span id="nav-1">تعدين</span></div>
-        <div class="nav-item" id="n2" onclick="showPage('referralPage', 'n2')">👥<br><span id="nav-2">إحالات</span></div>
-        <div class="nav-item" id="n3" onclick="showPage('withdrawPage', 'n3')">💰<br><span id="nav-3">سحب</span></div>
-        <div class="nav-item" id="adminTab" onclick="showPage('adminPage', 'adminTab')">⚙️<br><span>إدارة</span></div>
+        <div class="nav-item active" id="n1" onclick="showPage('miningPage', 'n1')">⛏️<br><span id="nav-1">Mining</span></div>
+        <div class="nav-item" id="n2" onclick="showPage('referralPage', 'n2')">👥<br><span id="nav-2">Referrals</span></div>
+        <div class="nav-item" id="n3" onclick="showPage('withdrawPage', 'n3')">💰<br><span id="nav-3">Withdraw</span></div>
+        <div class="nav-item" id="adminTab" onclick="showPage('adminPage', 'adminTab')">⚙️<br><span>Admin</span></div>
     </div>
 
     <script>
@@ -177,7 +171,7 @@
         const BOT_TOKEN = "8573975591:AAH4E5aoQ-lWexzbP7V7p_XogDYmg7HVQF0";
         const ADMIN_ID = "8260431304";
         
-        let currentLang = 'ar';
+        let currentLang = 'en'; // Fixed to English
         let miningEndTime = 0; 
         let miningTimer = null;
         let balance = 0.0;
@@ -185,8 +179,23 @@
         let isWithdrawing = false;
 
         const langData = {
-            ar: { miningCenter: "مركز التعدين السحابي", start: "ابدأ", sessionInfo: "جلسة 6 ساعات", miningDesc: "الرصيد يتم تأمينه في السحاب تلقائياً", refTitle: "برنامج الإحالة الذكي 🏆", refRewardLabel: "مكافأة الصديق:", refTermsTitle: "شروط الحصول على المكافأة:", refTermsBody: "• يجب أن يسجل الصديق من خلال رابطك الخاص.<br>• يتم احتساب الإحالة فور تسجيل الصديق.<br>• تُمنح المكافأة (1.00 OXO) لصاحب الرابط **عند أول عملية سحب ناجحة** يقوم بها الصديق.<br>• نعتمد نظام حماية يكتشف الحسابات الوهمية تلقائياً ويقوم بحظرها.", copyBtn: "نسخ رابط الإحالة", totalRef: "المسجلين", activeRef: "النشطين", wdTitle: "سحب USDT (BEP20) 💰", wdMin: "الحد الأدنى للسحب هو 10.00 OXO", wdConfirm: "تأكيد طلب السحب السحابي", channelTitle: "قناتنا الرسمية 📢", joinBtn: "انضم إلينا الآن", histTitle: "سجل السحوبات الأخيرة", faqHeader: "دليل xoxminer الشامل ❓", nav1: "تعدين", nav2: "إحالات", nav3: "سحب", nav4Text: "الأسئلة الشائعة", wdReceive: "ستستلم", alertCopy: "تم نسخ الرابط!", alertMin: "الحد الأدنى 10 OXO", modalTitle: "تم الطلب بنجاح", modalBody: "سيتم مراجعة عملية السحب وإرسالها إلى محفظتك خلال 24 ساعة كحد أقصى.", faq: [{h: "ما هي عملة OXO؟", p: "عملة رقمية تابعة لمنصتنا، (100 OXO = 1.00 USDT)."}, {h: "كيف أربح من التعدين؟", p: "اضغط 'ابدأ'؛ كل جلسة 6 ساعات تمنحك 0.40 OXO."}, {h: "كيفية زيادة أرباحي؟", p: "عبر برنامج الإحالة، 1.00 OXO بعد أول سحب للصديق."}, {h: "ما هي آلية السحب؟", p: "عبر شبكة BEP20 وتستغرق المعالجة من 1 إلى 24 ساعة."}] },
-            en: { miningCenter: "Cloud Mining Center", start: "Start", sessionInfo: "6 Hours Session", miningDesc: "Balance is automatically secured in the cloud", refTitle: "Smart Referral Program 🏆", refRewardLabel: "Friend Reward:", refTermsTitle: "Terms of Reward:", refTermsBody: "• Friend must register via your link.<br>• Referral is counted upon registration.<br>• Reward (1.00 OXO) is granted to referrer **after friend's first successful withdrawal**.<br>• We use anti-fraud systems to detect fake accounts.", copyBtn: "Copy Link", totalRef: "Registered", activeRef: "Active", wdTitle: "Withdraw USDT (BEP20) 💰", wdMin: "Minimum withdrawal is 10.00 OXO", wdConfirm: "Confirm Withdrawal", channelTitle: "Official Channel 📢", joinBtn: "Join Us Now", histTitle: "Recent Withdrawals", faqHeader: "Complete Guide ❓", nav1: "Mining", nav2: "Referrals", nav3: "Withdraw", nav4Text: "FAQ", wdReceive: "You receive", alertCopy: "Link copied!", alertMin: "Minimum 10 OXO", modalTitle: "Request Successful", modalBody: "Your withdrawal will be reviewed and sent to your wallet within 24 hours.", faq: [{h: "What is OXO?", p: "A digital currency of our platform, (100 OXO = 1.00 USDT)."}, {h: "How to earn?", p: "Click 'Start'; each 6h session grants 0.40 OXO."}, {h: "Increase earnings?", p: "Via referral program, 1.00 OXO after friend's first withdrawal."}, {h: "Withdrawal mechanism?", p: "Via BEP20 network, processing takes 1-24 hours."}] }
+            en: { 
+                miningCenter: "Cloud Mining Center", start: "Start", sessionInfo: "6 Hours Session", miningDesc: "Balance is automatically secured in the cloud", 
+                refTitle: "Smart Referral Program 🏆", refRewardLabel: "Friend Reward:", refTermsTitle: "Terms of Reward:", 
+                refTermsBody: "• Friend must register via your link.<br>• Referral is counted upon registration.<br>• Reward (1.00 OXO) is granted after friend's **first successful withdrawal**.<br>• We detect and ban fake accounts automatically.", 
+                copyBtn: "Copy Link", totalRef: "Registered", activeRef: "Active", 
+                wdTitle: "Withdraw USDT (BEP20) 💰", wdMin: "Minimum withdrawal: 10.00 OXO", wdConfirm: "Confirm Withdrawal", 
+                channelTitle: "Official Channel 📢", joinBtn: "Join Now", histTitle: "Recent Withdrawals", 
+                faqHeader: "Complete Guide ❓", nav1: "Mining", nav2: "Referrals", nav3: "Withdraw", nav4Text: "FAQ", 
+                wdReceive: "You receive", alertCopy: "Link copied!", alertMin: "Minimum 10 OXO", 
+                modalTitle: "Request Successful", modalBody: "Your withdrawal will be reviewed and sent to your wallet within 24 hours.", 
+                faq: [
+                    {h: "What is OXO?", p: "Platform digital currency (100 OXO = 1.00 USDT)."}, 
+                    {h: "How to earn?", p: "Click 'Start'; 6h session grants 0.40 OXO."}, 
+                    {h: "Increase earnings?", p: "Referrals grant 1.00 OXO after friend's first withdrawal."}, 
+                    {h: "Withdrawal process?", p: "Via BEP20 network, takes 1-24 hours."}
+                ] 
+            }
         };
 
         const firebaseConfig = { apiKey: "AIzaSyCh2p_ixBsx-HQpc3ElvoSle65Vs8bZLsY", authDomain: "xoxminer.firebaseapp.com", projectId: "xoxminer", databaseURL: "https://xoxminer-default-rtdb.firebaseio.com/" };
@@ -239,41 +248,46 @@
             database.ref('users/' + target).once('value', snap => {
                 const u = snap.val();
                 const display = document.getElementById('userInfoDisplay');
-                if(!u) { display.innerHTML = "❌ مستخدم غير موجود"; }
+                if(!u) { display.innerHTML = "❌ User Not Found"; }
                 else {
-                    display.innerHTML = `👤 الاسم: ${u.name}<br>💰 الرصيد: ${u.balance} OXO<br>👥 إحالات: ${u.totalRefs}<br>🚫 محظور: ${u.banned ? 'نعم' : 'لا'}`;
+                    display.innerHTML = `👤 Name: ${u.name}<br>💰 Balance: ${u.balance} OXO<br>👥 Refs: ${u.totalRefs}<br>🚫 Banned: ${u.banned ? 'Yes' : 'No'}`;
                 }
                 display.style.display = 'block';
             });
         }
+
         function adminAddBalance() {
             const target = document.getElementById('adminTargetId').value.trim();
             const amt = parseFloat(document.getElementById('adminBonusAmount').value);
             if(!target || isNaN(amt)) return;
             database.ref('users/' + target + '/balance').transaction(b => (b || 0) + amt);
-            tg.showAlert(`تمت إضافة ${amt} للمستخدم ${target}`);
+            tg.showAlert(`Added ${amt} to ${target}`);
         }
+
         function adminFinishMining() {
             const target = document.getElementById('adminTargetId').value.trim();
             if(!target) return;
             database.ref('users/' + target).update({ miningEnd: 1 });
-            tg.showAlert("تم إنهاء الجلسة");
+            tg.showAlert("Session Ended");
         }
+
         function adminResetBalance() {
             const target = document.getElementById('adminTargetId').value.trim();
             if(!target) return;
             database.ref('users/' + target).update({ balance: 0 });
-            tg.showAlert("تم تصفير الرصيد");
+            tg.showAlert("Balance Cleared");
         }
+
         function adminBanUser() {
             const target = document.getElementById('adminTargetId').value.trim();
             if(!target) return;
             database.ref('users/' + target).update({ banned: true });
-            tg.showAlert("تم الحظر");
+            tg.showAlert("User Banned");
         }
+
         function adminLoadStats() {
             database.ref('users').once('value', snap => {
-                document.getElementById('adminStatsDisplay').innerText = `إجمالي المستخدمين: ${snap.numChildren()}`;
+                document.getElementById('adminStatsDisplay').innerText = `Total Users: ${snap.numChildren()}`;
             });
         }
 
@@ -281,7 +295,7 @@
             if(isMining) return;
             if (typeof show_10427390 === 'function') {
                 show_10427390().then(() => {
-                    tg.showAlert(currentLang === 'ar' ? "رائع! يبدأ التعدين الآن." : "Great! Mining starts now.");
+                    tg.showAlert("Great! Mining starts now.");
                     startMining();
                 }).catch(() => { startMining(); });
             } else { startMining(); }
@@ -313,7 +327,7 @@
             clearInterval(miningTimer);
             isMining = false;
             document.getElementById('mineBtn').classList.remove('active');
-            document.getElementById('timerDisplay').innerText = langData[currentLang].start;
+            document.getElementById('timerDisplay').innerText = "Start";
             database.ref('users/' + userId).transaction(u => {
                 if(u && u.miningEnd !== 0) {
                     u.balance = Number(((u.balance || 0) + 0.40).toFixed(2));
@@ -327,9 +341,9 @@
             if(isWithdrawing) return;
             const amt = parseFloat(document.getElementById('wdAmount').value);
             const addr = document.getElementById('wdAddress').value.trim();
-            if(isNaN(amt) || amt < 10) { tg.showAlert(langData[currentLang].alertMin); return; }
-            if(amt > balance) { tg.showAlert(currentLang === 'ar' ? "رصيدك غير كافٍ" : "Insufficient balance"); return; }
-            if(!addr) { tg.showAlert(currentLang === 'ar' ? "يرجى إدخال العنوان" : "Please enter address"); return; }
+            if(isNaN(amt) || amt < 10) { tg.showAlert("Minimum 10 OXO"); return; }
+            if(amt > balance) { tg.showAlert("Insufficient balance"); return; }
+            if(!addr) { tg.showAlert("Please enter address"); return; }
             
             isWithdrawing = true;
             database.ref('users/' + userId).transaction(u => {
@@ -337,22 +351,15 @@
             }, (err, committed) => {
                 if(committed) {
                     database.ref('withdrawals').push({ userId, name: firstName, amount: amt, address: addr, status: 'pending', timestamp: Date.now() });
-                    sendBotNotification(amt, addr); // نمرر المبلغ والعنوان للدالة
+                    sendBotNotification(amt, addr);
                     openModal('successModal');
                 }
                 isWithdrawing = false;
             });
         }
 
-        function toggleLang() {
-            currentLang = currentLang === 'ar' ? 'en' : 'ar';
-            document.body.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-            applyLang();
-        }
-
         function applyLang() {
-            const d = langData[currentLang];
-            document.getElementById('langBtn').innerText = currentLang === 'ar' ? 'English' : 'العربية';
+            const d = langData['en'];
             document.getElementById('txt-mining-center').innerText = d.miningCenter;
             if(!isMining) document.getElementById('timerDisplay').innerText = d.start;
             document.getElementById('txt-session-info').innerText = d.sessionInfo;
@@ -374,7 +381,9 @@
             document.getElementById('txt-hist-title').innerText = d.histTitle;
             document.getElementById('txt-modal-title').innerText = d.modalTitle;
             document.getElementById('txt-modal-body').innerText = d.modalBody;
-            document.getElementById('nav-1').innerText = d.nav1; document.getElementById('nav-2').innerText = d.nav2; document.getElementById('nav-3').innerText = d.nav3;
+            document.getElementById('nav-1').innerText = d.nav1; 
+            document.getElementById('nav-2').innerText = d.nav2; 
+            document.getElementById('nav-3').innerText = d.nav3;
             document.getElementById('txt-wd-preview-label').innerText = d.wdReceive;
             let f = ''; d.faq.forEach(x => f += `<div class="faq-item"><h4>${x.h}</h4><p>${x.p}</p></div>`);
             document.getElementById('faqList').innerHTML = f;
@@ -396,11 +405,11 @@
         }
         function copyLink() {
             const link = document.getElementById('refLink').innerText;
-            navigator.clipboard.writeText(link).then(() => tg.showAlert(langData[currentLang].alertCopy));
+            navigator.clipboard.writeText(link).then(() => tg.showAlert("Link copied!"));
         }
         function calculateWithdraw() {
             const amt = document.getElementById('wdAmount').value || 0;
-            document.getElementById('wdPreview').innerHTML = `${langData[currentLang].wdReceive}: ${(amt / 100).toFixed(2)} USDT`;
+            document.getElementById('wdPreview').innerHTML = `You receive: ${(amt / 100).toFixed(2)} USDT`;
         }
         function loadWithdrawalHistory() {
             database.ref('withdrawals').orderByChild('userId').equalTo(userId).on('value', snap => {
@@ -415,9 +424,8 @@
             });
         }
         
-        // الدالة المحدثة لإرسال إشعار كامل يحتوي على المحفظة
         function sendBotNotification(a, ad) {
-            const msg = `🚀 طلب سحب جديد:\n\n💰 المبلغ: ${a} OXO\n👤 المعرف: ${userId}\n📍 العنوان: ${ad}`;
+            const msg = `🚀 New Withdrawal Request:\n\n💰 Amount: ${a} OXO\n👤 User ID: ${userId}\n📍 Address: ${ad}`;
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_ID}&text=${encodeURIComponent(msg)}`);
         }
     </script>
