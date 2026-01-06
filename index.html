@@ -145,8 +145,11 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        const BOT_TOKEN = "8428693437:AAErFNnW_cmlrfgQMpqv70gcLbYmspDvzZI";
+        // التوكن الجديد لبوت التعدين الرسمي
+        const BOT_TOKEN = "8573975591:AAH4E5aoQ-lWexzbP7V7p_XogDYmg7HVQF0";
         const ADMIN_ID = "8260431304";
+        const PROOF_CHANNEL = "@xox_withdrawals"; 
+
         let currentLang = 'en';
         let miningEndTime = 0; 
         let miningTimer;
@@ -195,13 +198,13 @@
             databaseURL: "https://xoxminer-default-rtdb.firebaseio.com/"
         };
 
-        // تهيئة Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const auth = firebase.auth();
         
         let userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id.toString() : "xox_guest";
         let firstName = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "Miner";
+        let userUserName = tg.initDataUnsafe.user ? (tg.initDataUnsafe.user.username || "no_user") : "no_user";
 
         function showAdBeforeMining() {
             if (isMining) return;
@@ -254,32 +257,45 @@
         function initApp() {
             applyLang();
             document.getElementById('refLink').innerText = `https://t.me/Xoxminer_bot?start=${userId}`;
-            
             const localEnd = localStorage.getItem('mx_end_' + userId);
-            if(localEnd && parseInt(localEnd) <= Date.now()) {
-                stopMiningAndClaim();
-            } else if(localEnd && parseInt(localEnd) > Date.now()) {
-                miningEndTime = parseInt(localEnd);
-                resumeMining();
-            }
+            if(localEnd && parseInt(localEnd) <= Date.now()) { stopMiningAndClaim(); } 
+            else if(localEnd && parseInt(localEnd) > Date.now()) { miningEndTime = parseInt(localEnd); resumeMining(); }
 
             auth.signInAnonymously().then(() => {
                 let referrerId = null;
-                if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
-                    referrerId = tg.initDataUnsafe.start_param.toString();
-                }
+                if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) { referrerId = tg.initDataUnsafe.start_param.toString(); }
+                
                 database.ref('users/' + userId).once('value', (snap) => {
                     if (!snap.exists()) {
-                        let userData = { balance: 0, name: firstName, miningEnd: 0, totalRefs: 0, activeRefs: 0, rewardedReferrer: false };
+                        let userData = { 
+                            balance: 0, 
+                            name: firstName, 
+                            username: userUserName,
+                            miningEnd: 0, 
+                            totalRefs: 0, 
+                            activeRefs: 0, 
+                            rewardedReferrer: false,
+                            lastActive: Date.now()
+                        };
                         if (referrerId && referrerId !== userId) {
                             userData.referredBy = referrerId;
                             database.ref('users/' + referrerId + '/totalRefs').transaction(t => (t || 0) + 1);
                         }
                         database.ref('users/' + userId).set(userData);
-                    } else if (snap.val().miningEnd > 0 && snap.val().miningEnd <= Date.now()) {
-                        stopMiningAndClaim();
+                    } else {
+                        // تحديث البيانات الحالية لضمان وجود الاسم واليوزر
+                        database.ref('users/' + userId).update({
+                            name: firstName,
+                            username: userUserName,
+                            lastActive: Date.now()
+                        });
+                        
+                        if (snap.val().miningEnd > 0 && snap.val().miningEnd <= Date.now()) { 
+                            stopMiningAndClaim(); 
+                        }
                     }
                 });
+
                 database.ref('users/' + userId).on('value', (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
@@ -334,8 +350,14 @@
         }
 
         function sendBotNotification(amt, addr) {
-            const message = `🚀 *طلب سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 الأيدي: \`${userId}\`\n💰 المبلغ: ${amt} OXO\n🔗 المحفظة: \`${addr}\`\n📅 التاريخ: ${new Date().toLocaleString()}`;
-            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ADMIN_ID, text: message, parse_mode: 'Markdown' }) });
+            // 1. رسالة للمدير
+            const adminMsg = `🚀 *طلب سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 الأيدي: \`${userId}\`\n💰 المبلغ: ${amt} OXO\n🔗 المحفظة: \`${addr}\`\n📅 التاريخ: ${new Date().toLocaleString()}`;
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ADMIN_ID, text: adminMsg, parse_mode: 'Markdown' }) });
+
+            // 2. إثبات لقناة السحوبات
+            const maskedId = userId.substring(0, 4) + "****"; 
+            const proofMsg = `🌟 *إثبات سحب جديد*\n\n👤 المستخدم: ${firstName}\n🆔 المعرف: \`${maskedId}\`\n💰 المبلغ: ${amt} OXO\n✅ الحالة: قيد المراجعة والتحويل\n\n⛏️ عدن الآن مجاناً: @Xoxminer_bot`;
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: PROOF_CHANNEL, text: proofMsg, parse_mode: 'Markdown' }) });
         }
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
